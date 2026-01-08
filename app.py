@@ -94,22 +94,22 @@ if uploaded_file is not None:
     except Exception as e:
         st.error(f"Error processing image: {e}")
 st.write(f"Digit {i}: {prob:.2%}")
-    else:
-      # Fallback: simple threshold-based recognition
-      st.write("## Using fallback recognition")
-      # Simple heuristic based on pixel intensity
-      digit_guess = np.argmax(np.sum(img_array.reshape(8, 8), axis=0)) % 10
-      st.write(f"Estimated digit: {digit_guess}")
-    except Exception as e:
-      st.error(f"Error processing image: {e}")
-    else:
-      st.write(f"Digit {i}: {prob:.2%}")
-      # Fallback: simple threshold-based recognition
-      st.write("## Using fallback recognition")
-      # Simple heuristic based on pixel intensity
-      digit_guess = np.argmax(np.sum(img_array.reshape(8, 8), axis=0)) % 10 st.write(f"Estimated digit: **{digit_guess}**")
-    except Exception as e:
-      st.error("Error processing image: {e}")
+else:
+    # Fallback: simple threshold-based recognition
+    st.write("## Using fallback recognition")
+    # Simple heuristic based on pixel intensity
+    digit_guess = np.argmax(np.sum(img_array.reshape(8, 8), axis=0)) % 10
+    st.write(f"Estimated digit: {digit_guess}")
+except Exception as e:
+    st.error(f"Error processing image: {e}")
+else:
+    st.write(f"Digit {i}: {prob:.2%}")
+    # Fallback: simple threshold-based recognition
+    st.write("## Using fallback recognition")
+    # Simple heuristic based on pixel intensity
+    digit_guess = np.argmax(np.sum(img_array.reshape(8, 8), axis=0)) % 10 st.write(f"Estimated digit: **{digit_guess}**")
+ except Exception as e:
+    st.error("Error processing image: {e}")
 
 # Instructions
   st.sidebar.header("Instructions")
