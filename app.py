@@ -1,120 +1,116 @@
-import streamlit as st
-import numpy as np
-from PIL import Image
-import joblib
-import requests
-import io
+# Дефинираме речник с вредните Е-номера и съставки от презентацията
+harmful_ingredients = {
+    "Е407": "Карагенан (възпаления, храносмилателни проблеми)",
+    "Е621": "Натриев глутамат (главоболие, алергии)",
+    "Е262": "Натриев ацетат (дразни стомаха)",
+    "Е300": "Аскорбинова киселина (в големи дози дразни стомаха)",
+    "Е330": "Лимонена киселина (уврежда зъбния емайл)",
+    "Е250": "Натриев нитрит (риск от онкологични заболявания)",
+    "Е952": "Цикламат - подсладител",
+    "Е471": "Емулгатор",
+    "Е472": "Емулгатор",
+    "Е450": "Дифосфати (нарушава калциево-фосфорния баланс, проблеми с костите и бъбреците)",
+    "фосфат": "Фосфатите могат да влияят негативно на бъбреците",
+    "консерван": "Консервантите често съдържат нитрати или сулфити",
+    "лактоза": "Може да причини стомашен дискомфорт при непоносимост",
+    "Е250":  "Натриев нитрит - Използва се в колбасите; силно канцерогенен, пречи на преноса на кислород в кръвта.",
+    "Е251": "Натриев нитрат - В тялото се превръща в нитрити; риск от онкологични заболявания.",
+    "Е211": "Натриев бензоат - Консервант в газирани напитки; може да увреди ДНК и да предизвика хиперактивност.",
+    "Е202": "Калиев сорбат - Може да предизвика алергични реакции и кожни дразнения.",
+    "Е220": "Серен диоксид - Използва се в сушени плодове и вина; опасен за астматици, разрушава витамин В1.",
 
-st.set_page_config(page_title="Handwritten Digit Recognition", page_icon="✍️")
-st.title("✍️ Handwritten Digit Recognition")
-st.write("Upload a handwritten digit image and AI will try to recognize it.")
+    # ОЦВЕТИТЕЛИ (Често причиняват хиперактивност при деца)
+    "Е102": "Тартразин (жълт) - Силна алергична реакция, астма, копривна треска.",
+    "Е110": "Сънсет жълто - Забранен в някои страни; причинява коремни болки и гадене.",
+    "Е122": "Азорубин (червен) - Риск от хиперактивност и лоша концентрация.",
+    "Е129": "Алура червено - Потенциално канцерогенен; влияе на поведението при децата.",
+    "Е133": "Брилянтно синьо - Може да причини алергии и бронхоспазъм.",
 
-# Simple model loading with fallback
+    # ПОДСЛАДИТЕЛИ
+    "Е951": "Аспартам - Изкуствен подсладител; свързва се с главоболие, световъртеж и промени в настроението.",
+    "Е952": "Цикламат - Забранен в САЩ; подозрения за увреждане на клетките и метаболизма.",
+    "Е954": "Захарин - В големи дози се свързва с риск от тумори при опитни животни.",
+
+    # ПОДОБРИТЕЛИ И ЕМУЛГАТОРИ
+    "Е621": "Натриев глутамат - 'Синдром на китайския ресторант'; главоболие, сърцебиене, пристрастяване към вкуса.",
+    "Е407": "Карагенан - Извлича се от водорасли, но причинява язви и възпаления на червата.",
+    "Е450": "Дифосфати - Пречат на усвояването на калций; риск от остеопороза и бъбречни камъни.",
+    "Е451": "Трифосфати - Подобно на Е450, нарушават минералния баланс.",
+    "Е452": "Полифосфати - Натоварват бъбреците и сърдечно-съдовата система.",
+   
+    # КЛЮЧОВИ ДУМИ
+    "палмово масло": "Растителна мазнина с високо съдържание на наситени мазнини; риск от сърдечни заболявания.",
+    "хидрогенирани": "Трансмазнини - най-опасните мазнини; запушват артериите и повишават лошия холестерол.",
+    "глюкозо-фруктозен": "Сироп, който води до затлъстяване, диабет тип 2 и омазняване на черния дроб."
+}
+
+# Инициализиране на EasyOCR (кешираме го, за да зарежда по-бързо)
 @st.cache_resource
 def load_model():
-    try:
-        # Try to load pre-trained model
-        # Using sklearn's built-in digits dataset
-        from sklearn.datasets import load_digits
-        from sklearn.neural_network import MLPClassifier
-        from sklearn.model_selection import train_test_split
+    # EasyOCR поддържа български (bg) и английски (en)
+    return easyocr.Reader(['bg', 'en'])
 
-        digits = load_digits()
-        X = digits.images.reshape((len(digits.images), -1)) / 16.0
-        y = digits.target
+reader = load_model()
 
-        X_train, _, y_train, _ = train_test_split(
-            X, y, test_size=0.2, random_state=42
-        )
+st.title(" Анализатор на хранителни етикети")
+st.write("Снимай или качи снимка на етикет, за да откриеш скрити вредни съставки и Е-номера.")
 
-        model = MLPClassifier(
-            hidden_layer_sizes=(100,),
-            max_iter=100,
-            random_state=42
-        )
+# Опции за добавяне на изображение: Камера или Качване на файл
+option = st.radio("Как искаш да добавиш снимка?", ("Качване на файл", "Снимане с камера"))
 
-        model.fit(X_train, y_train)
-        return model
+image_data = None
 
-    except Exception as e:
-        st.error(f"Model loading error: {e}")
-        return None
-
-
-model = load_model()
-
-if model is None:
-    st.warning("Could not load model. Using fallback recognition.")
+if option == "Качване на файл":
+    image_data = st.file_uploader("Качи изображение на етикет", type=['jpg', 'jpeg', 'png'])
 else:
-    st.success("Model loaded successfully!")
+    image_data = st.camera_input("Снимай етикета")
 
-# File uploader
-uploaded_file = st.file_uploader(
-    "Choose an image file", type=["png", "jpg", "jpeg"]
-)
+if image_data is not None:
+    # Зареждаме изображението чрез Pillow
+    image = Image.open(image_data)
+    st.image(image, caption="Заредено изображение", use_column_width=True)
+   
+    with st.spinner("Анализиране на текста с изкуствен интелект (EasyOCR)..."):
+        # Превръщаме изображението в числа (NumPy масив), за да може EasyOCR да го обработи
+        img_array = np.array(image)
+       
+        # Разчитане на текста
+        results = reader.readtext(img_array, detail=0)
+        extracted_text = " ".join(results).upper()
+       
+    st.subheader(" Разчетен текст:")
+    st.write(extracted_text)
+   
+    st.subheader("⚠️ Открити вредни съставки (Е-кодове и ключови думи):")
+    found_harmful = False
+   
+    # Проверка на разчетения текст за всяка вредна съставка от нашия речник
+    for key, description in harmful_ingredients.items():
+        if key.upper() in extracted_text:
+            st.error(f"**{key}** - {description}")
+            found_harmful = True
+           
+    if not found_harmful:
+        st.success("Няма открити опасни Е-номера или познати вредни съставки в този текст!")
 
-if uploaded_file is not None:
-    # Display the uploaded image
-    image = Image.open(uploaded_file)
-    st.image(image, caption="Uploaded Image", use_column_width=True)
+    st.subheader("💡 Здравословни алтернативи и идеи:")
 
-    # Process the image
-    try:
-        # Convert to grayscale and resize to 8x8
-        img_gray = image.convert('L')
-        img_resized = img_gray.resize((8, 8))
+col1, col2 = st.columns(2)
 
-        # Convert to numpy array and invert if needed
-        img_array = np.array(img_resized)
+with col1:
+    st.markdown("**Вместо вредното:**")
+    st.write("- ❌ Чипс и снаксове")
+    st.write("- ❌ Газирани напитки")
+    st.write("- ❌ Маргарин")
+    st.write("- ❌ Кетчуп с нишесте")
+    st.write("- ❌ Плодово кисело мляко")
 
-        # If background is dark, invert
-        if np.mean(img_array) > 128:
-            img_array = 255 - img_array
+with col2:
+    st.markdown("**Избери по-доброто:**")
+    st.write("- ✅ Печени ядки или домашен пуканки")
+    st.write("- ✅ Домашна лимонада или чай с мед")
+    st.write("- ✅ Гхи (пречистено масло) или зехтин")
+    st.write("- ✅ Домашно доматено пюре")
+    st.write("- ✅ Цедено мляко с пресни плодове")
 
-        # Normalize like the training data
-        img_array = img_array / 16.0
-        img_flat = img_array.flatten().reshape(1, -1)
-
-        if model is not None:
-            # Make prediction
-            prediction = model.predict(img_flat)[0]
-            st.write(f"## Prediction: **{prediction}**")
-
-            # Show probabilities
-            probs = model.predict_proba(img_flat)[0]
-            st.write("### Probabilities:")
-            for i, prob in enumerate(probs):
-                st.write(f"Digit {i}: {prob:.2%}")
-
-        else:
-            # Fallback: simple threshold-based recognition
-            st.write("## Using fallback recognition")
-            # Simple heuristic based on pixel intensity
-
-    except Exception as e:
-        st.error(f"Error processing image: {e}")
-        st.write(f"Digit {i}: {prob:.2%}")
-else:
-     # Fallback: simple threshold-based recognition
-    st.write("## Using fallback recognition")
-    # Simple heuristic based on pixel intensity
-    digit_guess = np.argmax(np.sum(img_array.reshape(8, 8), axis=0)) % 10
-    st.write(f"Estimated digit: {digit_guess}")
-except Exception as e:
-    st.error(f"Error processing image: {e}")
-# Instructions
-  st.sidebar.header("Instructions")
-  st.sidebar.write("""
-  1. Upload an image of a handwritten digit (0-9)
-  2. The image will be resized to 8x8 pixels
-  3. AI model will predict the digit
-  4. For best results:
-  -White background
-  - Black digit
-  - Centered digit
-  - Minimal noise
-  """)
-  
-
-
-
+# st.info("📌 **Съвет за разрастване:** Можеш да добавиш 'Дневник на храните', в който да записваш кои продукти си сканирал и колко Е-та си консумирал за деня!")
