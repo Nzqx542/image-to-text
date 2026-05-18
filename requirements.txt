@@ -1,6 +1,6 @@
-streamlit
-numpy
-pillow
-scikit-learn
+streamlit>=1.30.0
+numpy>=1.24.0
+pillow>=10.0.0
+easyocr>=1.7.0
 
 
