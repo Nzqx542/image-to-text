@@ -50,29 +50,29 @@ def load_model():
 reader = load_model()
 
 # Заглавие
-st.title("🥫 Анализатор на хранителни етикети")
+st.title("Анализатор на хранителен етикет")
 
 st.write(
-    "Качи снимка или използвай камерата, "
+    "Качи снимка, или използвай камерата, "
     "за да откриеш вредни Е-номера и съставки."
 )
 
 # Избор на метод
 option = st.radio(
     "Как искаш да добавиш снимка?",
-    ("Качване на файл", "Снимане с камера")
+    ("Прикачване на файл", "Снимане с камерата ви")
 )
 
 image_data = None
 
 # Качване / камера
-if option == "Качване на файл":
+if option == "Прикачване на файл":
     image_data = st.file_uploader(
         "Качи изображение",
         type=["jpg", "jpeg", "png"]
     )
 else:
-    image_data = st.camera_input("Снимай етикета")
+    image_data = st.camera_input("Снимайте етикета")
 
 # Ако има изображение
 if image_data is not None:
@@ -87,7 +87,7 @@ if image_data is not None:
     )
 
     # OCR анализ
-    with st.spinner("🔍 Анализиране на текста..."):
+    with st.spinner("Анализиране на текста..."):
 
         img_array = np.array(image)
 
@@ -99,11 +99,11 @@ if image_data is not None:
         extracted_text = " ".join(results).upper()
 
     # Показване на текста
-    st.subheader("📄 Разчетен текст")
+    st.subheader(" Разчетен текст")
     st.write(extracted_text)
 
     # Анализ за вредни съставки
-    st.subheader("⚠️ Открити вредни съставки")
+    st.subheader("Открити вредни съставки")
 
     found_harmful = False
 
@@ -117,12 +117,12 @@ if image_data is not None:
 
     if not found_harmful:
         st.success(
-            "✅ Няма открити опасни Е-номера "
+            " Няма открити опасни Е-номера "
             "или вредни съставки."
         )
 
 # Здравословни алтернативи
-st.subheader("💡 Здравословни алтернативи")
+st.subheader(" Здравословни алтернативи")
 
 col1, col2 = st.columns(2)
 
